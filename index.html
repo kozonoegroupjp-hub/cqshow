@@ -20,7 +20,6 @@
       <p id="auth-hint" class="hint"></p>
     </div>
   </section>
-
   <section id="app-view" hidden>
     <header class="topbar"><div><strong>CQShow</strong><small>見積書・請求書</small></div><div class="head-actions"><span id="company-label"></span><button id="signout-btn" class="icon-btn" title="Sair">↪</button></div></header>
     <main id="main" class="content"></main>
@@ -29,4 +28,25 @@
     </nav>
   </section>
   <script src="config.js"></script><script type="module" src="app.js?v=3"></script>
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    const cfg=window.CQSHOW_CONFIG||{}, sb=cfg.SUPABASE_URL&&cfg.SUPABASE_ANON_KEY?createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY):null;
+    let showArchived=false;
+    const money=n=>new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY',maximumFractionDigits:0}).format(Number(n||0));
+    const calc=items=>{const sub=items.reduce((a,i)=>a+(+i.quantity||0)*(+i.unit_price||0)-(+i.discount||0),0),tax=items.reduce((a,i)=>a+(((+i.quantity||0)*(+i.unit_price||0)-(+i.discount||0))*(+i.tax_rate||0)/100),0);return{sub,tax,total:sub+tax}};
+    function notify(text,error=false){const e=document.querySelector('#toast');if(!e)return;e.textContent=text;e.style.cssText='position:fixed;z-index:50;top:76px;left:50%;transform:translateX(-50%);background:'+ (error?'#9e3030':'#173e61') +';color:#fff;padding:10px 15px;border-radius:9px;box-shadow:0 5px 20px #0003';setTimeout(()=>e.removeAttribute('style'),3600)}
+    function documentPage(){return [...document.querySelectorAll('.page-head h1')].some(x=>x.textContent.trim()==='Documentos')}
+    function docId(row){const b=row.querySelector('[onclick*="editDoc"]'),m=b?.getAttribute('onclick')?.match(/editDoc\('([^']+)'/);return m?.[1]}
+    function badgeStatus(row){return [...(row.querySelector('.badge')?.classList||[])].find(x=>['draft','issued','sent','paid','cancelled','archived'].includes(x))||'draft'}
+    function statusName(s){return ({draft:'Rascunho',issued:'Emitido',sent:'Enviado',paid:'Pago',cancelled:'Cancelado'})[s]||'Rascunho'}
+    async function archive(id,status){if(!sb)return;localStorage.setItem('cqshow-doc-status-'+id,status);const r=await sb.from('documents').update({status:'archived'}).eq('id',id);if(r.error)return notify(r.error.message,true);notify('Documento arquivado.');location.reload()}
+    async function restore(id){if(!sb)return;const status=localStorage.getItem('cqshow-doc-status-'+id)||'draft',r=await sb.from('documents').update({status}).eq('id',id);if(r.error)return notify(r.error.message,true);notify('Documento restaurado como '+statusName(status)+'.');location.reload()}
+    function enhanceDocuments(){if(!documentPage())return;const head=document.querySelector('.page-head');if(head&&!document.querySelector('#archived-toggle')){const b=document.createElement('button');b.id='archived-toggle';b.className='secondary';b.type='button';b.textContent='Arquivados';b.onclick=()=>{showArchived=!showArchived;b.textContent=showArchived?'Ocultar arquivados':'Arquivados';enhanceDocuments()};head.appendChild(b)}
+      document.querySelectorAll('.table tbody tr').forEach(row=>{const id=docId(row);if(!id)return;const status=badgeStatus(row),actions=row.querySelector('.actions'),badge=row.querySelector('.badge');if(status==='archived'){if(badge)badge.textContent='Arquivado';row.hidden=!showArchived;if(actions&&!actions.querySelector('.restore-doc')){const b=document.createElement('button');b.type='button';b.className='secondary restore-doc';b.textContent='Restaurar';b.onclick=()=>restore(id);actions.appendChild(b)}}else if(actions&&!actions.querySelector('.archive-doc')){const b=document.createElement('button');b.type='button';b.className='secondary archive-doc';b.textContent='Arquivar';b.onclick=()=>archive(id,status);actions.appendChild(b)}})}
+    async function freshPdf(id){const w=window.open('pdf.html?v='+Date.now(),'cqshow-pdf');try{if(!w)throw Error('Permita a abertura de janela para gerar o PDF.');const dr=await sb.from('documents').select('*, clients(*)').eq('id',id).single();if(dr.error)throw dr.error;const ir=await sb.from('document_items').select('*').eq('document_id',id).order('position');if(ir.error)throw ir.error;const or=await sb.from('organizations').select('*').limit(1).maybeSingle();if(or.error)throw or.error;const payload={d:dr.data,c:Array.isArray(dr.data.clients)?dr.data.clients[0]:(dr.data.clients||{}),items:ir.data,t:calc(ir.data),o:or.data};let sent=false;const send=()=>{if(sent)return;sent=true;try{const st=w.document.createElement('style');st.textContent='@page{margin:7mm!important}';w.document.head.appendChild(st)}catch(_){}w.postMessage({type:'cqshow-pdf',payload},location.origin)};w.addEventListener('load',send,{once:true});setTimeout(send,650)}catch(x){notify(x.message,true)}}
+    const patch=()=>{if(!window.CQ)return setTimeout(patch,80);window.CQ.pdf=freshPdf};
+    patch();new MutationObserver(enhanceDocuments).observe(document.body,{childList:true,subtree:true});enhanceDocuments();
+  </script>
+  <style>@media(max-width:620px){.table th:nth-child(3),.table td:nth-child(3){display:table-cell}.table td.actions{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap}.table button{margin-left:0;padding:8px 9px;font-size:12px}}</style>
+
 </body></html>
