@@ -1,0 +1,25 @@
+name: Supabase daily health check
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keep-project-active:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Supabase API and database access
+        env:
+          SUPABASE_URL: https://krbuybchjmhnkzfpmmpw.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_Ns6aucDw5-M_YCBKb9zJOw_N76YoG_w
+        run: |
+          status=$(curl --silent --show-error --output /dev/null --write-out "%{http_code}" \
+            --header "apikey: $SUPABASE_ANON_KEY" \
+            --header "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/organizations?select=id&limit=1")
+          echo "Supabase returned HTTP $status"
+          test "$status" = "200"
