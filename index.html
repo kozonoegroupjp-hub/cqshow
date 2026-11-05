@@ -55,7 +55,7 @@
         try {
           const response = await fetch(config.SUPABASE_URL + '/auth/v1/recover', {
             method: 'POST',
-            headers: { apikey: config.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+            headers: { apikey: config.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + config.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, redirect_to: location.origin + location.pathname })
           });
           if (!response.ok) throw new Error('Falha ao enviar o link.');
