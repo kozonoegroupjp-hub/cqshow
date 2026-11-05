@@ -48,4 +48,43 @@ async function restoreDoc(id,status){const r=await sb.from('documents').update({
 async function deleteDoc(id){if(!confirm('Excluir este documento permanentemente? Esta ação não pode ser desfeita.'))return;const r=await sb.from('documents').delete().eq('id',id);if(r.error)return toast(r.error.message,true);await load();render();toast('Documento excluído.')}
 function toggleArchived(){showArchived=!showArchived;render()}
 window.CQ={newDoc,editDoc,client,service,pdf,close:closeModal,archiveDoc,restoreDoc,deleteDoc,toggleArchived};
-if(configured){boot().catch(e=>{console.error(e);toast(e.message,true);showAuth()})}else showAuth();
+let recoveryMode=false;
+function showAuth(){
+  $('#auth-view').hidden=false;
+  $('#app-view').hidden=true;
+  $('#auth-form').hidden=recoveryMode;
+  $('#register-btn').hidden=recoveryMode;
+  $('#forgot-password-btn').hidden=recoveryMode;
+  $('#password-reset-form').hidden=!recoveryMode;
+  if(!configured){$('#auth-hint').innerHTML='Falta inserir a chave pública do Supabase no arquivo <code>config.js</code>.';$('#auth-form button').disabled=true}
+}
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session||recoveryMode)return showAuth();
+  S.user=session.user;
+  let{data:org,error}=await sb.from('organizations').select('*').limit(1).maybeSingle();
+  if(error)throw error;
+  if(!org)throw Error('Não foi possível localizar os dados da empresa.');
+  S.org=org;await load();$('#auth-view').hidden=true;$('#app-view').hidden=false;$('#company-label').textContent=org.name;render()
+}
+$('#forgot-password-btn').addEventListener('click',async()=>{try{
+  const email=$('#auth-email').value.trim();
+  if(!email)throw Error('Informe seu e-mail e toque novamente em “Esqueci minha senha”.');
+  const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  if(r.error)throw r.error;
+  toast('Se este e-mail estiver cadastrado, enviaremos um link para criar uma nova senha.');
+}catch(x){toast(x.message,true)}});
+$('#password-reset-form').addEventListener('submit',async e=>{e.preventDefault();try{
+  const password=$('#new-password').value,confirm=$('#new-password-confirm').value;
+  if(password.length<8)throw Error('A nova senha deve ter pelo menos 8 caracteres.');
+  if(password!==confirm)throw Error('As senhas não conferem.');
+  const r=await sb.auth.updateUser({password});
+  if(r.error)throw r.error;
+  recoveryMode=false;history.replaceState({},document.title,location.pathname);
+  $('#new-password').value='';$('#new-password-confirm').value='';
+  toast('Senha atualizada. Você já pode entrar.');showAuth();
+}catch(x){toast(x.message,true)}});
+if(configured){
+  sb.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY'){recoveryMode=true;showAuth()}});
+  boot().catch(e=>{console.error(e);toast(e.message,true);showAuth()})
+}else showAuth();
