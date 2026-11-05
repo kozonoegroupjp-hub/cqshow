@@ -16,7 +16,14 @@
         <label>Senha<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label>
         <button class="primary" type="submit">Entrar</button>
       </form>
+      <button id="forgot-password-btn" class="link-button" type="button">Esqueci minha senha</button>
       <button id="register-btn" class="link-button">Criar acesso novo</button>
+      <form id="password-reset-form" hidden>
+        <p class="sub">Use o link recebido por e-mail para criar uma nova senha.</p>
+        <label>Nova senha<input id="new-password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label>
+        <label>Confirmar nova senha<input id="new-password-confirm" type="password" autocomplete="new-password" minlength="8" required placeholder="Repita a nova senha"></label>
+        <button class="primary" type="submit">Salvar nova senha</button>
+      </form>
       <p id="auth-hint" class="hint"></p>
     </div>
   </section>
@@ -27,7 +34,6 @@
       <button data-view="home"><span>⌂</span>Início</button><button data-view="documents"><span>▤</span>Documentos</button><button data-view="clients"><span>♙</span>Clientes</button><button data-view="services"><span>⌘</span>Serviços</button><button data-view="settings"><span>⚙</span>Ajustes</button>
     </nav>
   </section>
-  <script src="config.js"></script><script type="module" src="app.js?v=6"></script>
+  <script src="config.js"></script><script type="module" src="app.js?v=7"></script>
   <style>@media(max-width:620px){.table th:nth-child(3),.table td:nth-child(3){display:table-cell}.table td.actions{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap}.table button{margin-left:0;padding:8px 9px;font-size:12px}}</style>
-
 </body></html>
