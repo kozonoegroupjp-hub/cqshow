@@ -70,7 +70,7 @@ async function boot(){
 $('#forgot-password-btn').addEventListener('click',async()=>{window.CQShowResetHandling=true;try{
   const email=$('#auth-email').value.trim();
   if(!email)throw Error('Informe seu e-mail e toque novamente em “Esqueci minha senha”.');
-  const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://kozonoegroupjp-hub.github.io/cqshow/'});
   if(r.error)throw r.error;
   toast('Se este e-mail estiver cadastrado, enviaremos um link para criar uma nova senha.');
 }catch(x){toast(x.message,true)}finally{window.CQShowResetHandling=false}});
