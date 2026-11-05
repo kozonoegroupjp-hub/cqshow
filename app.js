@@ -67,13 +67,13 @@ async function boot(){
   if(!org)throw Error('Não foi possível localizar os dados da empresa.');
   S.org=org;await load();$('#auth-view').hidden=true;$('#app-view').hidden=false;$('#company-label').textContent=org.name;render()
 }
-$('#forgot-password-btn').addEventListener('click',async()=>{try{
+$('#forgot-password-btn').addEventListener('click',async()=>{window.CQShowResetHandling=true;try{
   const email=$('#auth-email').value.trim();
   if(!email)throw Error('Informe seu e-mail e toque novamente em “Esqueci minha senha”.');
   const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
   if(r.error)throw r.error;
   toast('Se este e-mail estiver cadastrado, enviaremos um link para criar uma nova senha.');
-}catch(x){toast(x.message,true)}});
+}catch(x){toast(x.message,true)}finally{window.CQShowResetHandling=false}});
 $('#password-reset-form').addEventListener('submit',async e=>{e.preventDefault();try{
   const password=$('#new-password').value,confirm=$('#new-password-confirm').value;
   if(password.length<8)throw Error('A nova senha deve ter pelo menos 8 caracteres.');
